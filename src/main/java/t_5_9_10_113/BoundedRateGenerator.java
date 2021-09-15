@@ -1,4 +1,4 @@
-package t91;
+package t_5_9_10_113;
 
 import org.apache.flink.api.common.state.ListState;
 import org.apache.flink.api.common.state.ListStateDescriptor;
@@ -9,38 +9,32 @@ import org.apache.flink.runtime.state.FunctionSnapshotContext;
 import org.apache.flink.streaming.api.checkpoint.CheckpointedFunction;
 import org.apache.flink.streaming.api.functions.source.SourceFunction;
 
-/** Data-generating source function. */
-public final class Generator implements SourceFunction<Tuple2<Integer, Integer>>, CheckpointedFunction {
+import java.util.Random;
+
+public class BoundedRateGenerator  implements SourceFunction<Tuple2<Integer, Long>>, CheckpointedFunction {
 
     private static final long serialVersionUID = -2819385275681175792L;
 
-    private final int numKeys;
-    private final int idlenessMs;
-    private final int recordsToEmit;
+    private static final Random random = new Random();
 
     private volatile int numRecordsEmitted = 0;
     private volatile boolean canceled = false;
 
     private ListState<Integer> state = null;
 
-    Generator(final int numKeys, final int idlenessMs, final int durationSeconds) {
-        this.numKeys = numKeys;
-        this.idlenessMs = idlenessMs;
+    public BoundedRateGenerator() {
 
-        this.recordsToEmit = ((durationSeconds * 1000) / idlenessMs) * numKeys;
     }
 
     @Override
-    public void run(final SourceContext<Tuple2<Integer, Integer>> ctx) throws Exception {
-        while (numRecordsEmitted < recordsToEmit) {
+    public void run(final SourceContext<Tuple2<Integer, Long>> ctx) throws Exception {
+        int numKeys = random.nextInt(10);
             synchronized (ctx.getCheckpointLock()) {
                 for (int i = 0; i < numKeys; i++) {
-                    ctx.collect(Tuple2.of(i, numRecordsEmitted));
+                    ctx.collect(Tuple2.of(i, Long.valueOf("" + numRecordsEmitted)));
                     numRecordsEmitted++;
                 }
             }
-            Thread.sleep(idlenessMs);
-        }
 
         while (!canceled) {
             Thread.sleep(50);
